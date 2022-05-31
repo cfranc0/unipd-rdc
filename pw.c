@@ -18,20 +18,29 @@
 // 
 struct sockaddr_in local, remote, server;
 
+/**
+ * - The client connects to the proxy using the 's' socket
+ * - The connection is moved to the 'rs' socket, with a unique port
+ *   for each client
+ * - The proxy connects to the server requested by the client
+ *   using the 'ss' socket
+ * 
+ *  +--------+        +-------+       +--------+
+ *  |        | ==s==> |       |       |        |
+ *  | client |<==rs==>| proxy |<==ss=>| server |
+ *  |        |        |       |       |        |
+ *  +--------+        +-------+       +--------+
+ **/
+
 // Create a request/response buffer in the static area so that they are predefined as all zeros
 // This should be useful so that the string delimiter is already present (usefulness? not much,
 // we change it anyways)
 #define buffLen 1024*1024 // 1MB
 
-// 
+// Request coming from the client
 char request[buffLen];
-// 
-char request2[buffLen];
-// 
+// Response to be sent back to the client
 char response[buffLen];
-// 
-char response2[buffLen];
-// 
 char hRequest[buffLen];
 
 // Define the header struct in order to save the headers returned in the response
@@ -175,9 +184,9 @@ int main(int argc, char* argv[], char* env[]) {
       //    108       int headersCount = 0;
       //    SP Request-URI SP HTTP-Version CRLF
       char *method, *url, *version;
-      method = reqLine;
       
-      // Using a pointer to 
+      // Splitting the request line into its individual components: separating url, method and version
+      method = reqLine;
       int p = 0;
       for (p=0; reqLine[p] != ' '; p++);
       reqLine[p++] = 0;
@@ -195,7 +204,12 @@ int main(int argc, char* argv[], char* env[]) {
       */
 
       /*
-       * 
+       * When a GET request is recieved, the client is accessing an HTTP website
+       * The proxy catches this request, makes an equivalent one to the server (without headers, in this
+       * implementation) and sends the response back to the client.
+       * The client is aware that a proxy is present and it needs to set it up through the system settings,
+       * but this technique can also be used to create "invisible" proxy that can see all the traffic going
+       * through a network node.
        */
       if (!strcmp(method, "GET")) {
         
@@ -253,6 +267,7 @@ int main(int argc, char* argv[], char* env[]) {
          sprintf(request, "GET /%s HTTP/1.1\r\nHost:%s\r\nConnection:close\r\n\r\n", filename, hostname);
          write(ss, request, strlen(request));
 
+         // And when a response is heard from the server, send it back to the client
          for (int t; t = read(ss, response, 2000); ) {
             write(rs, response, t);
          }
@@ -260,7 +275,12 @@ int main(int argc, char* argv[], char* env[]) {
 
       }
       /*
-       * 
+       * If a CONNECT request is received, the client wants to connect to the specified remote server
+       * using a tunnelling approach.
+       * This means that the request coming from the server is directly forwareded to the remote
+       * server, without having the proxy create a new one.
+       * This method allows for TLS encrypted connections to work, as the proxy just exposes its IP
+       * address, but the client is the one dictating what to send.
        */
       else if (!strcmp(method, "CONNECT")) {
          
@@ -291,12 +311,11 @@ int main(int argc, char* argv[], char* env[]) {
             exit(-1);
          }
 
-         // Connecting to the remote IP
-
          server.sin_family = AF_INET;
          server.sin_port = htons((unsigned short)atoi(port));
          server.sin_addr.s_addr = *(unsigned int*) remoteIP->h_addr;
 
+         // Connecting to the remote IP
          if (connect(ss, (struct sockaddr*) &server, sizeof(struct sockaddr_in)) == -1) {
             perror("Server connect failure");
             exit(-1);
@@ -306,11 +325,12 @@ int main(int argc, char* argv[], char* env[]) {
          sprintf(response, "HTTP/1.1 200 Estrablished\r\n\r\n");
          write(rs, response, strlen(response));
          
-         int pid;
-         if (pid = fork()) { // Parent
+         if (fork()) { // Parent
             
-            for (int t; t=read(rs, request2, 2000);) {
-               write(ss, request2, t);
+            // The parent keeps listing out for requests coming from the client and for the remote server
+            // If one is recieved, forward it to the socket connected with the final IP
+            for (int t; t=read(rs, request, 2000);) {
+               write(ss, request, t);
                // printf("S << C : %s\n", request2);
             }
 
@@ -319,9 +339,9 @@ int main(int argc, char* argv[], char* env[]) {
 
             // Reading from the ss socket (connection between the proxy and the website server) which contains the response
             // that the server intends to send the client
-            for (int t; t=read(ss, response2, 2000); ) {
+            for (int t; t=read(ss, response, 2000); ) {
                // And forwarding the response to the client, instead of keeping it to us
-               write(rs, response2, t);
+               write(rs, response, t);
                // printf("S >> C : %s\n", response2);
             }
             
