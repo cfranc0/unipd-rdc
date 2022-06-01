@@ -1,14 +1,6 @@
-/**
- * @Author: francesco
- * @Date:   2022-04-27T14:29:55-05:00
- * @Last edit by: francesco
- * @Last edit at: 2022-04-27T14:29:55-05:00
- */
-
-
 #include <stdio.h>
 #include <string.h>
-// This includes the types used for
+// This includes the types used for 
 #include <sys/types.h>          /* See NOTES */
 //
 #include <sys/socket.h>
@@ -18,6 +10,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <netdb.h>
 
 struct sockaddr_in remote;
 
@@ -25,6 +18,7 @@ struct sockaddr_in remote;
 // This should be useful so that the string delimiter is already present (usefulness? not much,
 // we change it anyways)
 #define buffLen 1024*1024 // 1MB
+char request[1024];
 char response[buffLen];
 
 // Define the header struct in order to save the headers returned in the response
@@ -40,12 +34,11 @@ struct Header headers[100];
 // and read until a termination char is found.
 char hResponse[buffLen];
 
-int main() {
-   // Remote server IP
-   // Can be found using: nslookup <domain>
-   unsigned char ipserver[4] = { 142,250,179,228 };
-   int s;
+char hostname[1000];
 
+int main() {
+   int s;
+  
    // Create a socket using
    // Domain:   AF_INET       Domain of the connection (Address family: Internet protocol)
    // Type:     SOCK_STREAM   Type of connection to be opened (TCP)
@@ -57,9 +50,16 @@ int main() {
       perror("Socket Fallita");
       return -1;
    }
+ 
+   // Specify the hostname that the client needs to connect to
+   sprintf(hostname, "www.unipd.it");
 
+   // Resolving the hostname to an IP address
+   struct hostent* remoteIP;
+   printf("Resolving IP for %s...\n", hostname);
+   remoteIP = gethostbyname(hostname);
    // When using HTTP1.1, the Host header must be specified when making a request.
-   // The Host header identifies the URI requested from the server as multiple
+   // The Host header identifies the URI requested from the server as multiple 
    // hosts may be working at the same IP address
    /*
     * 14.23 Host
@@ -69,10 +69,12 @@ int main() {
     *    name for the service being requested, then the Host header field MUST
     *    be given with an empty value.
     */
-   char *request = "GET / HTTP/1.1\r\nHost:www.google.com\r\n\r\n";
+   sprintf(request, "GET / HTTP/1.1\r\nHost:%s\r\n\r\n", hostname);
+
+   printf("Connecting to: %s [%d.%d.%d.%d]\n", hostname, (unsigned char) remoteIP->h_addr[0],(unsigned char) remoteIP->h_addr[1],(unsigned char) remoteIP->h_addr[2],(unsigned char) remoteIP->h_addr[3]);
    /*
     * The request string follows the RFC2616 format
-    *
+    * 
     * Request       = Request-Line              ; Section 5.1
     *                 *(( general-header        ; Section 4.5
     *                  | request-header         ; Section 5.3
@@ -82,13 +84,13 @@ int main() {
     *
     * Since there is at least one header, another CRLF is required before the body
     */
-
+   
 
    // Assign the required information to the remote address object (?)
    remote.sin_family = AF_INET; //
    remote.sin_port = htons(80); // Port HTTP
-   remote.sin_addr.s_addr = *((uint32_t *) ipserver); // Remote IP
-
+   remote.sin_addr.s_addr = *(unsigned int*)(remoteIP->h_addr);
+   
    // Open a connection on the socket created previously
    if ( -1 == connect(s, (struct sockaddr *) &remote, sizeof(struct sockaddr_in)) ) {
       perror("Connect Fallita");
@@ -108,15 +110,15 @@ int main() {
     * plus an extra one after the last header.
     */
    int headersCount = 0;
-
+  
    headers[0].n = hResponse;
    for (int i=0; read(s, hResponse+i, 1); i++) {
-
+     
       // When the termination is reached
       if (hResponse[i] == '\n' && hResponse[i-1] == '\r') {
          // Let's terminate the previous string (which is at i-1 since the CRLF is 2 chars)
          hResponse[i-1] = 0;
-
+         
          /*
           * We know we reached the end of the headers part of the response when we see
           * 2 consecutive CRLF. But the program at this point does not know how to
@@ -145,12 +147,12 @@ int main() {
    }
 
    printf("Status string: %s\n\n", headers[0].n);
-
+   
    printf("Found %d headers\n", headersCount);
 
    // Looping through the headers received, skipping the first one as it contains the
    // status string
-
+   
    /*
     * Bodylength contains: the length of the response if provided
     *                      0 if the response has no length
@@ -159,7 +161,7 @@ int main() {
    int bodyLength = 0;
 
    for (int i=1; i<headersCount; i++) {
-
+   
       printf("%s: %s\n", headers[i].n, headers[i].v);
 
       if (!strcmp("Content-Length", headers[i].n)) bodyLength = atoi(headers[i].v);
@@ -174,7 +176,7 @@ int main() {
 
       /*
        * When using chunked transfer, the respose body will follow this structure
-       *
+       * 
        * Chunked-Body   = *chunk
        *                  last-chunk
        *                  trailer
@@ -199,7 +201,7 @@ int main() {
 
          // This for loop will read the *chunk portion of the body and stop at the CRLF after
          // the chunk size
-
+         
          chunkLength = 0;
          for (int j=0; read(s, chunkBuffer + j, 1) && !(chunkBuffer[j] == '\n' && chunkBuffer[j-1] == '\r'); j++) {
 
@@ -228,16 +230,20 @@ int main() {
 
       }
 
+      // Terminating the response body with a string terminator
+      response[readChunkOffset] = 0;
    }
    // Body-length method
    else if (bodyLength > 0) {
-
-      for (int i=0, n=0; i < bodyLength && (n = read(s, response + i, 2)) > 0; i += n);
+      
+      int i=0, n=0;
+      for (; i < bodyLength && (n = read(s, response + i, 2)) > 0; i += n);
+      
+      // Terminating response with string terminator
+      response[i] = 0;
 
    }
 
-   // Terminating the response body with a string terminator
-   reponse[readChunkOffset] = 0;
    printf("%s\n", response);
 
    return 0;

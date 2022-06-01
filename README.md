@@ -3,14 +3,15 @@
 Università di Padova, A.A. 2021/2022, Prof. Zingirian N. - 
 🔗 [Link didattica](https://didattica.unipd.it/off/2019/LT/IN/IN0508/000ZZ/INP8084335/N0)
 
-> Se trovate alcun **problema** nel codice, aprite una [Issue](issue) o [PR](pulls).
+> Se trovate alcun **problema** nel codice, aprite una [Issue](https://github.com/cfranc0/rdc/issue) o [PR](https://github.com/cfranc0/rdc/pulls).
 >
-> If you find any **problem** with the code, please file an [Issue](issue) o [PR](pulls).
+> If you find any **problem** with the code, please file an [Issue](https://github.com/cfranc0/rdc/issue) o [PR](https://github.com/cfranc0/rdc/pulls).
 
 ## Contenuto della repo
 
 In questa repo sono contenuti i programmi sviluppati dal professore durante il corso tenuto nell'A.A. 21/22 e riscritti per essere più chiaramente comprensibili e più estensivamente commentati.
 * Client web HTTP/1.1
+  * Risoluzione degli hostname in IP
   * Parsing degli header
   * Supporta il `Transfer-Encoding: chunked`
 * Server web
