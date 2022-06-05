@@ -3,9 +3,9 @@
 Università di Padova, A.A. 2021/2022, Prof. Zingirian N. - 
 🔗 [Link didattica](https://didattica.unipd.it/off/2019/LT/IN/IN0508/000ZZ/INP8084335/N0)
 
-> Se trovate alcun **problema** nel codice, aprite una [Issue](https://github.com/cfranc0/rdc/issue) o [PR](https://github.com/cfranc0/rdc/pulls).
+> Se trovate alcun **problema** nel codice, aprite una [Issue](https://github.com/cfranc0/rdc/issues) o [PR](https://github.com/cfranc0/rdc/pulls).
 >
-> If you find any **problem** with the code, please file an [Issue](https://github.com/cfranc0/rdc/issue) o [PR](https://github.com/cfranc0/rdc/pulls).
+> If you find any **problem** with the code, please file an [Issue](https://github.com/cfranc0/rdc/issues) o [PR](https://github.com/cfranc0/rdc/pulls).
 
 ## Contenuto della repo
 
@@ -21,6 +21,10 @@ In questa repo sono contenuti i programmi sviluppati dal professore durante il c
 * Proxy web
   * Modalità `GET` in chiaro
   * Modalità `CONNECT` tramite TLS tunnelling
+* Socket web server
+  > Compilare con: `gcc wsock.c -o wsock -lcrypto`
+  * Handshake socket
+  * Comunicazione bidirezionale tra server e client
 
 ## Standard di riferimento (Standards)
 

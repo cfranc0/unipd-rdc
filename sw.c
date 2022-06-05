@@ -1,11 +1,3 @@
-/**
- * @Author: francesco
- * @Date:   2022-05-11T20:56:47+02:00
- * @Last edit by: francesco
- * @Last edit at: 2022-05-11T21:03:27+02:00
- */
-
-
 /*
  * In the exam, it is required to put a comment on the top portion of the code explaining
  * the top-level steps

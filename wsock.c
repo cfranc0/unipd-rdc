@@ -1,12 +1,3 @@
-/*
- * THIS SCRIPT IS NOT COMPLETE!
- */
-
-/*
- * In the exam, it is required to put a comment on the top portion of the code explaining
- * the top-level steps
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>          /* See NOTES */
@@ -243,7 +234,34 @@ int main(int argc, char* argv[], char* env[]) {
       sprintf(response, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n", webSocketAcceptToken);
       write(rs, response, strlen(response));
 
-      sprintf(response, "Ciao\r\n");
+      // Sending a sample data packet following the format specified in the
+      // 5.2 section of the RFC
+      
+      sprintf(response + 2, "Ciao dal server\r\n");
+
+      /*
+       *  0               1               2               3
+       *  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
+       *  +-+-+-+-+-------+-+-------------+-------------------------------+
+       *  |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+       *  |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+       *  |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+       *  | |1|2|3|       |K|             |                               |
+       *  +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+       *  |                              ...                              |
+       *
+       * The first byte contains the FIN code and OP code, alongside some
+       * reserved flag bits.
+       *    In this implementation, each package is indipendent and every message
+       *    is sent in a single package.
+       *
+       * The second byte contains the mask bit and the payload length. To make
+       * sure the mask bit is always 0, a bit-wise and is performed between the
+       * length and 0x7F (which is 01111111).
+       */
+      response[0] = 0x81;
+      response[1] = 0x7F & strlen(response + 2);
+
       write(rs, response, strlen(response));
 
       // And close the connection socket, to signal that the data is over.
