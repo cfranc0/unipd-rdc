@@ -41,4 +41,4 @@ This repo contains codes developed during the [Computer Networks 1](https://en.d
 
 You can find scripts related to the HTTP standard as listed in the *Standards* section.
 
-Every script is written in english and commented.
+Base scripts are written in english and commented, exam solutions may be commented in italian.
