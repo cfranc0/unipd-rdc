@@ -1,4 +1,4 @@
- /*
+/*
  * Al momento della richiesta il client controlla se la risorsa richiesta e' presente in cache
  * controllando la directory /cache/ per un file nominato secondo la convenzione definita nella
  * consegna.
@@ -59,7 +59,7 @@ if ( -1 == connect(s, (struct sockaddr *)&remote,sizeof(struct sockaddr_in)))
 
 // Scrivo nella request line il nome della risorsa che voglio andare a prendere
 // ma con il metodo HEAD, quindi prendendo solamente gli header senza il body
-sprintf(request, "HEAD %s HTTP/1.0\r\nHost:www.example.com\r\n\r\n", resourceName);
+sprintf(request, "HEAD %s HTTP/1.0\r\nHost:www.example.com\r\nConnection: Keep-Alive\r\n\r\n", resourceName);
 
 FILE* cached;
 if ((cached = fopen(_resourceName, "r")) != NULL) {
@@ -86,12 +86,12 @@ if ((cached = fopen(_resourceName, "r")) != NULL) {
    // Cerco l'header Last-Modified tra gli header della risposta
    char* modified = 0;
    for(i=1; i<j; i++) {
+      // printf("%s: %s\n", h[i].n, h[i].v);
       if (!strcmp(h[i].n, "Last-Modified")) {
          printf("**");
          modified = h[i].v;
          break;
       }
-      printf("%s: %s\n", h[i].n, h[i].v);
    }
    
    // Prendo l'epoch indicato nel file di cache
@@ -101,22 +101,16 @@ if ((cached = fopen(_resourceName, "r")) != NULL) {
    time_t cacheTimeInt = atoi(cacheTime);
 
    // Prendo la data dalla riposta http
-   /* 
-    * ⚠️ Questa parte del codice non funziona!
-    * Il parsing della data a partire dall'header html non ritorna la data corretta
-    */
    struct tm* httpTime = malloc(sizeof(struct tm));
-   char* format = "%A, %d %b %Y %T";
+   char* format = "%a, %d %b %Y %T GMT";
    time_t httpTimeInt;
    if (modified) {
-      char* primiduepunti = strptime(modified, format, httpTime);
-      printf("Errore strptime %s\n", primiduepunti);
-      printf("%d %d/%d/%d %d:%d:%d\n", httpTime->tm_wday, httpTime->tm_mday, httpTime->tm_mon, httpTime->tm_year, httpTime->tm_hour, httpTime->tm_min, httpTime->tm_sec);
+      strptime(modified, format, httpTime);
 
       httpTimeInt = mktime(httpTime);
    }
    free(httpTime);
-
+   
    // Se l'header non e stato fornito dal server nella risposta mando di defualt
    // quello che ho in cache all'utente.
    // 
@@ -125,9 +119,7 @@ if ((cached = fopen(_resourceName, "r")) != NULL) {
    // 
    // Infine, se la cache risulta obsoleta -> Effettuo comunque l'operazione di GET
    // per salvarmi il nuovo file
-   if (!modified || (httpTimeInt > cacheTimeInt)) {
-      /* */
-   
+   if (!modified || (httpTimeInt < cacheTimeInt)) {
       printf("Invio al client la cache!\n");
 
       fclose(cached);
@@ -137,6 +129,8 @@ if ((cached = fopen(_resourceName, "r")) != NULL) {
    fclose(cached);
 
 }
+
+printf("Richiedo al server remoto il file aggiornato\n");
 
 // A questo punto del file dovro' sicuramente andarmi a prendere il file completo
 // dal server, quindi preparo la request line con il metodo GET
@@ -160,6 +154,7 @@ if (hbuffer[i]==':' && !h[j].v){
 cached = fopen(_resourceName, "w+");
 
 // Ci scrivo il timestamp attuale
+sprintf(response, "%lu\n", (unsigned long) time(NULL));
 fwrite(response, sizeof(response[0]), strlen(response), cached);
 
 // E ci inserisco anche il contenuto della response body
@@ -168,9 +163,6 @@ if (n==-1) { perror("Read fallita"); return -1;}
 fwrite(response, sizeof(response[0]), strlen(response), cached);
 
 fclose(cached);
-
-response[len]=0;
-printf("%s\n", response);
 }
 
 void normalizeString(char* in, char* out) {
