@@ -92,7 +92,7 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
          for(i=0; i < sizeof(blacklist)/sizeof(char*); i++) {
             if (strcmp(blacklist[i], refererHeader) != 0) continue;
          
-            sprintf(response, "HTTP/1.1 307 Temporary Redirect\r\nLocation:%s\r\n\r\n", refererHeader);
+            sprintf(response, "HTTP/1.0 302 Moved Temporarily\r\nLocation:%s\r\n\r\n", refererHeader);
             write(s2, response, strlen(response));
 
             close(s2);
