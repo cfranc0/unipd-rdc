@@ -1,4 +1,4 @@
-/* 
+/*
  * Quando viene effettuata una connessione da parte di un client, si verifica se l'indirizzo IP
  * di provenienza e' all'interno della blacklist. In tal caso e' possibile trasferire solamente
  * file con header Content-Type 'text/html' o 'text/plain'.
@@ -26,7 +26,7 @@ struct sockaddr_in local, remote, server;
 
 struct hostent * he;
 
-char* blacklist[4] = {"109.118.90.251", "5.90.123.205", "", ""};
+char* blacklist[] = {"109.118.90.251", "5.90.123.205"};
 
 int main()
 {
@@ -91,18 +91,18 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
 
         printf("Request line: %s\n",reqline);
         method = reqline;
-        for(i=0;i<100 && reqline[i]!=' ';i++); reqline[i++]=0; 
+        for(i=0;i<100 && reqline[i]!=' ';i++); reqline[i++]=0;
         url=reqline+i;
-        for(;i<100 && reqline[i]!=' ';i++); reqline[i++]=0; 
+        for(;i<100 && reqline[i]!=' ';i++); reqline[i++]=0;
         ver=reqline+i;
-        for(;i<100 && reqline[i]!='\r';i++); reqline[i++]=0; 
+        for(;i<100 && reqline[i]!='\r';i++); reqline[i++]=0;
         if ( !strcmp(method,"GET")){
                 scheme=url;
-                        // GET http://www.aaa.com/file/file 
+                        // GET http://www.aaa.com/file/file
                 for(i=0;url[i]!=':' && url[i] ;i++);
                 if(url[i]==':') url[i++]=0;
                 else {printf("Parse error, expected ':'"); exit(1);}
-                if(url[i]!='/' || url[i+1] !='/') 
+                if(url[i]!='/' || url[i+1] !='/')
                 {printf("Parse error, expected '//'"); exit(1);}
                 i=i+2; hostname=url+i;
                 for(;url[i]!='/'&& url[i];i++);
@@ -111,7 +111,7 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
                 filename = url+i;
 
                 he = gethostbyname(hostname);
-                printf("%d.%d.%d.%d\n",(unsigned char) he->h_addr[0],(unsigned char) he->h_addr[1],(unsigned char) he->h_addr[2],(unsigned char) he->h_addr[3]); 
+                printf("%d.%d.%d.%d\n",(unsigned char) he->h_addr[0],(unsigned char) he->h_addr[1],(unsigned char) he->h_addr[2],(unsigned char) he->h_addr[3]);
                 if (( s3 = socket(AF_INET, SOCK_STREAM, 0 )) == -1)
                         { printf("errno = %d\n",errno); perror("Socket Fallita"); exit(-1); }
 
@@ -126,14 +126,14 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
                 write(s3,request,strlen(request));
 
       int headersScanned = 1;
-      
+
       char* clientIP = malloc(15);
       sprintf(clientIP, "%d.%d.%d.%d",*((unsigned char*) &remote.sin_addr.s_addr),*((unsigned char*) &remote.sin_addr.s_addr+1),  *((unsigned char*) &remote.sin_addr.s_addr+2), *((unsigned char*) &remote.sin_addr.s_addr+3));
       printf("Client IP is %s\n", clientIP);
       for (i=0; i<sizeof(blacklist)/sizeof(char *) && headersScanned; i++)
          if (!strncmp(clientIP, blacklist[i], strlen(blacklist[i])))
             headersScanned = 0;
-     
+
       printf("headersScanned is %s\n", (headersScanned ? "ON" : "OFF"));
 
       bzero(h, sizeof(struct header)*100);
@@ -141,7 +141,7 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
       int l = 0;
       // Leggo ogni chunk di 2000 byte che mi arriva
       while (t = read(s3, buffer, 2000)) {
-         
+
          // Se ho gia' trovato la fine degli header e ho controllato il tipo di file allora
          // posso direttamente invaire il chunk al client
          if (headersScanned) {
@@ -185,12 +185,12 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
                }
             }
          }
-         
+
          // Se finito il ciclo non trovo Content-Type, di default non facciamo accedere l'utente alla
          // risorsa richiesta
          // Stessa cosa succede se il tipo non e' ne 'text/plain' ne '/text/html'
          //printf("Content type vale: %s\n", contentType);
-         
+
          if (!contentType || !( strncmp(contentType, "text/plain", strlen("text/plain")) == 0 || strncmp(contentType, "text/html", strlen("text/html")) == 0 )) {
             printf("Niente content-type o sbaglito: %.10s\n", contentType);
             sprintf(response, "HTTP/1.1 404 Not Found\r\nContent-Length:0\r\nConnection:close\r\n\r\n");
@@ -198,7 +198,7 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
             write(s2, response, strlen(response));
             break;
          }
-            
+
          // Se arriviamo a questo punto sappiamo che il file e' del tipo consentito, quindi possiamo mandare
          // al client tutto quello che abbiamo bufferizzato intanto che aspettavamo di ricevere tutti gli
          // header
@@ -208,14 +208,14 @@ for (i=0,j=0; read(s2,hbuffer+i,1); i++) {
 
                 close(s3);
                 }
-        else if(!strcmp("CONNECT",method)) { // it is a connect  host:port 
+        else if(!strcmp("CONNECT",method)) { // it is a connect  host:port
                 hostname=url;
                 for(i=0;url[i]!=':';i++); url[i]=0;
                 port=url+i+1;
                 printf("hostname:%s, port:%s\n",hostname,port);
                 he = gethostbyname(hostname);
                 if (he == NULL) { printf("Gethostbyname Fallita\n"); return 1;}
-                printf("Connecting to address = %u.%u.%u.%u\n", (unsigned char ) he->h_addr[0],(unsigned char ) he->h_addr[1],(unsigned char ) he->h_addr[2],(unsigned char ) he->h_addr[3]); 
+                printf("Connecting to address = %u.%u.%u.%u\n", (unsigned char ) he->h_addr[0],(unsigned char ) he->h_addr[1],(unsigned char ) he->h_addr[2],(unsigned char ) he->h_addr[3]);
                 s3=socket(AF_INET,SOCK_STREAM,0);
 
                 if(s3==-1){perror("Socket to server fallita"); return 1;}
