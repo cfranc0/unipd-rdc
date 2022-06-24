@@ -31,6 +31,7 @@ In questa repo sono contenuti i programmi sviluppati dal professore durante il c
 * RFC1945 **HTTP 1.0** 🔗 [rfc-editor.org](https://www.rfc-editor.org/rfc/rfc1945)
 * RFC2616 **HTTP 1.1** 🔗 [rfc-editor.org](https://www.rfc-editor.org/rfc/rfc2616)
 * RFC3875 **Common Gateway Interface (CGI)** 🔗 [rfc-editor.org](https://www.rfc-editor.org/rfc/rfc3875.html)
+* RFC6265 **Cookies** 🔗 [rfc-editor.org](https://www.rfc-editor.org/rfc/rfc6265)
 * RFC6455 **WebSocket** 🔗 [rfc-editor.org](https://www.rfc-editor.org/rfc/rfc6455.html)
 
 ---
